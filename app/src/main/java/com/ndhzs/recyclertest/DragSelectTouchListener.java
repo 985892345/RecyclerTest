@@ -250,9 +250,9 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
 
         /**
          * @param isFinish 是否结束了滑动
-         * @param theLastPosition 结束滑动时的item位置
+         * @param finalPosition 结束滑动时的item位置
          */
-        void onSelectLastPosition(boolean isFinish, int theLastPosition);
+        void onSelectLastPosition(boolean isFinish, int finalPosition);
     }
 }
 
