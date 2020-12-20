@@ -21,5 +21,6 @@ public class MainActivity extends AppCompatActivity {
         adapter = new RvAdapter(500, this);
         recyclerView.setAdapter(adapter);
         recyclerView.addOnItemTouchListener(new DragSelectTouchListener());
+        recyclerView.scrollToPosition(100);
     }
 }
