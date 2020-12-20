@@ -220,29 +220,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         }
                     }
                 }
-
-
-
-
-
-
-//                mIsAbleToDrag = !mMultipleSelected.contains(position);
-//                if (mIsAbleToDrag) {
-//                    if (!mTemporary.contains(position) && !mAllSelected.contains(position)) {
-//                        mTemporary.add(position);
-//                        mMultipleSelected.add(position);
-//                        notifyItemChanged(position);
-//                    }else if (mTemporary.contains(position)) {
-//                        int TruePosition = mIsDragDown ? position - 1 : position + 1;
-//                        mTemporary.remove(TruePosition);
-//                        mMultipleSelected.remove(TruePosition);
-//                        notifyItemChanged(TruePosition);
-//                    }else if (!mTemporary.contains(position) && mMultipleSelected.contains(position)) {
-//                        //长按已经选择了的判断
-//                    }else if (mAllSelected.contains(position)) {
-//                        mIsAbleToDrag = false;
-//                    }
-//                }
                 break;
             case BUTTON_TOP:
                 if (mIsFirstClick) {
@@ -300,7 +277,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
         mIsAbleToDrag = false;
         mIsFirstClick = true;
 
-        Log.d(TAG, "onSelectLastPosition: ");
         switch (WhichViewClicked) {
             case TEXT_VIEW:
                 mIsLongPressMultiSelect = false;
