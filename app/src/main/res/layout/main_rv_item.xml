@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="40dp">
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="50dp"
+        android:layout_height="0dp"
+        android:gravity="center|center_vertical"
+        android:text="时间"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="HardcodedText" />
+
+    <View
+        android:id="@+id/view_first_top"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/border_width"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/yellow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tv_time"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/view_last_bottom"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/border_width"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/yellow"
+        app:layout_constraintBottom_toBottomOf="@id/layout_task"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tv_time" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layout_task"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toTopOf="@id/view_line"
+        app:layout_constraintEnd_toStartOf="@+id/btn_first_top"
+        app:layout_constraintStart_toEndOf="@+id/tv_time"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <View
+            android:id="@+id/view_inside_top"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/border_width"
+            android:layout_marginStart="@dimen/border_width"
+            android:layout_marginEnd="@dimen/border_width"
+            android:background="@color/uniformAnotherColor"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_task"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/border_width"
+            android:gravity="center|center_vertical"
+            android:text="任务"
+            app:layout_constraintBottom_toTopOf="@+id/view_inside_bottom"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="HardcodedText" />
+
+        <View
+            android:id="@+id/view_inside_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/border_width"
+            android:layout_marginStart="@dimen/border_width"
+            android:layout_marginEnd="@dimen/border_width"
+            android:background="@color/uniformAnotherColor"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <Button
+        android:id="@+id/btn_first_top"
+        android:layout_width="30dp"
+        android:layout_height="15dp"
+        android:background="@drawable/item_btn_top"
+        android:stateListAnimator="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btn_last_bottom"
+        android:layout_width="30dp"
+        android:layout_height="15dp"
+        android:background="@drawable/item_btn_bottom"
+        android:stateListAnimator="@null"
+        app:layout_constraintBottom_toBottomOf="@id/view_last_bottom"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <View
+        android:id="@+id/view_line"
+        android:layout_width="0dp"
+        android:layout_height="1px"
+        android:background="@color/gray"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/layout_task"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/layout_task" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
