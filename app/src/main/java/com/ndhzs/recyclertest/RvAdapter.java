@@ -24,14 +24,13 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     private final Context context;
     private View rootView;
     private boolean mCanDrag;
-    private int mFirstPosition, mLastPosition;
+    private int mStartPosition, mFirstPosition, mLastPosition, mPreFirstP, mPreLastP;
 
     private boolean mIsFinish;
 
     private HashSet<Integer> mAllSelected;
     private HashSet<Integer> mSingleSelected;
     private HashSet<Integer> mMultipleSelected;
-    private HashSet<Integer> mTemporary;
     private HashSet<Integer> mFirstPositions;
     private HashSet<Integer> mLastPositions;
 
@@ -44,15 +43,12 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     private final int BUTTON_TOP = 1;
     private final int BUTTON_BOTTOM = 2;
 
-    private int mTextDoneFirstClick;
-
     public RvAdapter(int dataSize, Context context) {
         this.dataSize = dataSize;
         this.context = context;
         mAllSelected = new HashSet<>();
         mSingleSelected = new HashSet<>();
         mMultipleSelected = new HashSet<>();
-        mTemporary = new HashSet<>();
         mFirstPositions = new HashSet<>();
         mLastPositions = new HashSet<>();
 
@@ -69,7 +65,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull MyViewHolder holder, final int position) {
 
         holder.tvTime.setText(String.valueOf(position));
 
@@ -115,11 +111,18 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mCanAutoScrollUp = false;
                     WhichViewClicked = TEXT_DO;
 
-                    mFirstPosition = position;
+                    mStartPosition = position;
+                    mFirstPosition = mStartPosition;
+                    
+                    mFirstPositions.add(position);
+                    mLastPositions.add(position);
+                    mMultipleSelected.add(position);
+                    mAllSelected.add(position);
+
+                    notifyItemChanged(position);
 
                     //下面的remove是长按后删除单选的item
-                    if (mSingleSelected.contains(position)) {
-                        mSingleSelected.remove(position);
+                    if (mSingleSelected.remove(position)) {
                         mAllSelected.remove(position);
                     }
                 }else {//长按多选的item
@@ -127,13 +130,15 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mCanAutoScrollUp = false;
                     mCanAutoScrollDown = false;
                     WhichViewClicked = TEXT_DONE;
-                    mTextDoneFirstClick = position;
-                    Log.d(TAG, position + "    "+mFirstToLast.toString());
-                    for (int key : mFirstToLast.keySet()) {
-                        if (position >= key && position <= mFirstToLast.get(key)) {
-                            Log.d(TAG, "key = "+key+"    value = "+mFirstToLast.get(key));
-                            mFirstPosition = key;
-                            mLastPosition = mFirstToLast.get(key);
+                    mStartPosition = position;
+
+                    for (int lastPosition : mFirstToLast.keySet()) {
+                        if (mStartPosition >= lastPosition && mStartPosition <= mFirstToLast.get(lastPosition)) {
+                            Log.d(TAG, "lastPosition = "+lastPosition+"    value = "+mFirstToLast.get(lastPosition));
+                            mPreFirstP = lastPosition;
+                            mFirstPosition = lastPosition;
+                            mLastPosition = mFirstToLast.get(lastPosition);
+                            mPreLastP = mLastPosition;
                             break;
                         }
                     }
@@ -153,7 +158,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mCanAutoScrollUp = false;
                     mCanAutoScrollDown = false;
                     WhichViewClicked = BUTTON_TOP;
-                    mFirstPosition = position;
+                    mStartPosition = position;
+                    mFirstPosition = mStartPosition;
                     mLastPosition = mFirstToLast.get(mFirstPosition);
                 }
                 return mCanDrag;
@@ -170,7 +176,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mCanAutoScrollUp = false;
                     mCanAutoScrollDown = false;
                     WhichViewClicked = BUTTON_BOTTOM;
-                    mLastPosition = position;
+                    mStartPosition = position;
+                    mLastPosition = mStartPosition;
                     mFirstPosition = mLastToFirst.get(mLastPosition);
                 }
                 return mCanDrag;
@@ -201,8 +208,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     }
 
     @Override
-    public int onFirstPosition() {
-        return mFirstPosition;
+    public int onStartPosition() {
+        return mStartPosition;
     }
 
     private int mUnableSelect;
@@ -211,7 +218,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
         return mUnableSelect;
     }
 
-    private int mPreviousPosition = mFirstPosition;
+    private int mPreviousPosition = mStartPosition;
     private boolean mIsDragDown;
     private boolean mIsFirstClick = true;
     private int mUpperBoundary = Integer.MIN_VALUE;
@@ -227,107 +234,102 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
             case TEXT_DO:
                 if (mIsFirstClick) {//记录第一次长按空的或单选的item的位置（单选的item会变成多选）
                     mIsFirstClick = false;
-                    mFirstPositions.add(position);
-                    mLastPositions.add(position);
-                    mMultipleSelected.add(position);
-                    mTemporary.add(position);
-
-                    notifyItemChanged(position);
-                }else {//空的或单选的item的位置改变（单选的item会变成多选）
-                    if (position < mFirstPosition) {//当前位置小于开始位置
-                        mCanDrag = false;
-                    }else if (mCanDrag && mAllSelected.contains(position)) {//能滑动且当滑动到其他已经选择的区域，记录下边界位置
+                }else if (position < mFirstPosition) {//当前位置小于开始位置
+                    mCanDrag = false;
+                }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {//向下滑动增加
+                    if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {//当滑动到其他已经选择的区域，记录下边界位置
                         mLowerBoundary = position;
                         mCanDrag = false;
-                    }else if (position < mLowerBoundary){//能滑动的且相邻的空白位置或往回滑动
+                    }else {
                         mCanDrag = true;
-                        if (!mTemporary.contains(position)) {//向下滑动增加
-                            mTemporary.add(position);
-                            mLastPositions.remove(position - 1);
-                            mLastPositions.add(position);
-                            mMultipleSelected.add(position);
+                        mLastPositions.remove(position - 1);
+                        mLastPositions.add(position);
+                        mMultipleSelected.add(position);
+                        mAllSelected.add(position);
 
-                            notifyItemChanged(position - 1);
-                            notifyItemChanged(position);
-                        }else if (mTemporary.contains(position) && !mLastPositions.contains(position)) {
-                            //当往回滑不是自身结尾位置时（防止从其他区域往回滑而刷新）
-                            mCanAutoScrollUp = true;
-                            mLastPositions.add(position);
-                            mTemporary.remove(position + 1);
-                            mLastPositions.remove(position + 1);
-                            mMultipleSelected.remove(position + 1);
-
-                            notifyItemChanged(position + 1);
-                            notifyItemChanged(position);
-                        }
+                        notifyItemChanged(position - 1);
+                        notifyItemChanged(position);
                     }
+                }else if (!mIsDragDown && position < mLowerBoundary - 1) {
+                    //当往回滑不是自身结尾位置时（防止从其他区域往回滑而刷新）
+                    mCanDrag = true;
+                    mCanAutoScrollUp = true;
+                    mLastPositions.remove(position + 1);
+                    mLastPositions.add(position);
+                    mMultipleSelected.remove(position + 1);
+                    mAllSelected.remove(position + 1);
+
+                    notifyItemChanged(position + 1);
+                    notifyItemChanged(position);
+                }else {
+                    mCanDrag = false;
                 }
                 break;
             case TEXT_DONE:
                 if (mIsFirstClick) {
                     mIsFirstClick = false;
-                }else {
-                    if (mIsDragDown && mLastPosition + 1 < mLowerBoundary) {
+                }else if (mIsDragDown && mLastPosition + 1 < mLowerBoundary) {
+                    if (mAllSelected.contains(mLastPosition + 1) && mLowerBoundary == Integer.MAX_VALUE) {
+                        mLowerBoundary = mLastPosition + 1;
+                        mCanDrag = false;
+                    }else {
                         mFirstPosition += 1;
                         mLastPosition += 1;
-                        if ((mLastPositions.contains(mLastPosition) || mSingleSelected.contains(mLastPosition)) && mLowerBoundary == Integer.MAX_VALUE) {
-                            mLowerBoundary = mLastPosition;
-                            mCanDrag = false;
-                        }else if (mLastPosition < mLowerBoundary) {
-                            mCanDrag = true;
-                            mCanAutoScrollDown = true;
-                            mAllSelected.remove(mFirstPosition - 1);
-                            mAllSelected.add(mLastPosition);
-                            mMultipleSelected.remove(mFirstPosition - 1);
-                            mMultipleSelected.add(mLastPosition);
-                            mFirstPositions.remove(mFirstPosition - 1);
-                            mFirstPositions.add(mFirstPosition);
-                            mLastPositions.remove(mLastPosition - 1);
-                            mLastPositions.add(mLastPosition);
+                        mCanDrag = true;
+                        mCanAutoScrollDown = true;
+                        mAllSelected.remove(mFirstPosition - 1);
+                        mAllSelected.add(mLastPosition);
+                        mMultipleSelected.remove(mFirstPosition - 1);
+                        mMultipleSelected.add(mLastPosition);
+                        mFirstPositions.remove(mFirstPosition - 1);
+                        mFirstPositions.add(mFirstPosition);
+                        mLastPositions.remove(mLastPosition - 1);
+                        mLastPositions.add(mLastPosition);
 
-                            notifyItemChanged(mFirstPosition);
-                            notifyItemChanged(mFirstPosition - 1);
-                            notifyItemChanged(mLastPosition);
-                            notifyItemChanged(mFirstPosition - 1);
-                        }else {
-                            mCanDrag = false;
-                        }
-                    }else if (!mIsDragDown && mFirstPosition - 1 > mUpperBoundary) {
+                        notifyItemChanged(mFirstPosition);
+                        notifyItemChanged(mFirstPosition - 1);
+                        notifyItemChanged(mLastPosition);
+                        notifyItemChanged(mLastPosition - 1);
+                    }
+                }else if (!mIsDragDown &&  mFirstPosition - 1 > mUpperBoundary){
+                    if (mAllSelected.contains(mFirstPosition - 1) && mUpperBoundary == Integer.MIN_VALUE) {
+                        mUpperBoundary = mFirstPosition - 1;
+                        mCanDrag = false;
+                    }else {
                         mFirstPosition -= 1;
                         mLastPosition -= 1;
-                        if ((mLastPositions.contains(mFirstPosition) || mSingleSelected.contains(mFirstPosition)) && mUpperBoundary == Integer.MIN_VALUE) {
-                            mUpperBoundary = mFirstPosition;
-                            mCanDrag = false;
-                        }else if (mFirstPosition > mUpperBoundary) {
-                            mCanDrag = true;
-                            mCanAutoScrollDown = true;
-                            mAllSelected.remove(mLastPosition + 1);
-                            mAllSelected.add(mFirstPosition);
-                            mMultipleSelected.remove(mLastPosition + 1);
-                            mMultipleSelected.add(mFirstPosition);
-                            mFirstPositions.remove(mFirstPosition + 1);
-                            mFirstPositions.add(mFirstPosition);
-                            mLastPositions.remove(mLastPosition + 1);
-                            mLastPositions.add(mLastPosition);
+                        mCanDrag = true;
+                        mCanAutoScrollUp = true;
+                        mAllSelected.remove(mLastPosition + 1);
+                        mAllSelected.add(mFirstPosition);
+                        mMultipleSelected.remove(mLastPosition + 1);
+                        mMultipleSelected.add(mFirstPosition);
+                        mFirstPositions.remove(mFirstPosition + 1);
+                        mFirstPositions.add(mFirstPosition);
+                        mLastPositions.remove(mLastPosition + 1);
+                        mLastPositions.add(mLastPosition);
 
-                            notifyItemChanged(mFirstPosition);
-                            notifyItemChanged(mFirstPosition + 1);
-                            notifyItemChanged(mLastPosition);
-                            notifyItemChanged(mLastPosition + 1);
-                        }else {
-                            mCanDrag = false;
-                        }
+                        notifyItemChanged(mFirstPosition);
+                        notifyItemChanged(mFirstPosition + 1);
+                        notifyItemChanged(mLastPosition);
+                        notifyItemChanged(mLastPosition + 1);
                     }
+                }else {
+                    mCanDrag = false;
                 }
                 break;
             case BUTTON_TOP:
                 if (mIsFirstClick) {//第一次长按不处理
                     mIsFirstClick = false;
-                }else if (!mIsDragDown && position > mUpperBoundary && position < mLastPosition) {
-                    if ((mLastPositions.contains(position) || mSingleSelected.contains(position)) && mUpperBoundary == Integer.MIN_VALUE) {
+                }else if (position > mLastPosition) {
+                    mCanDrag = false;
+                }else if (!mIsDragDown && position > mUpperBoundary  && position != mLastPosition) {
+                    if (mAllSelected.contains(position) && mUpperBoundary == Integer.MIN_VALUE) {
                         mUpperBoundary = position;
-                    }
-                    if (position > mUpperBoundary) {
+                        Log.d(TAG, "mUpper = "+mUpperBoundary);
+                        mCanDrag = false;
+                    }else {
+                        Log.d(TAG, "position = "+position);
                         mCanDrag = true;
                         mCanAutoScrollUp = true;
                         mAllSelected.add(position);
@@ -337,10 +339,9 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
                         notifyItemChanged(position + 1);
                         notifyItemChanged(position);
-                    }else {
-                        mCanDrag = false;
                     }
-                }else if (mIsDragDown && position > mUpperBoundary && position <= mLastPosition && !mFirstPositions.contains(position)) {
+                }else if (mIsDragDown && position > mUpperBoundary + 1) {
+                    Log.d(TAG, "position = "+position+"     mUpper = "+mUpperBoundary);
                     mCanDrag = true;
                     mCanAutoScrollDown = true;
                     mAllSelected.remove(position - 1);
@@ -357,24 +358,24 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
             case BUTTON_BOTTOM:
                 if (mIsFirstClick) {
                     mIsFirstClick = false;
-                }else if (mIsDragDown && position > mFirstPosition && position < mLowerBoundary) {
-                    if ((mFirstPositions.contains(position) || mSingleSelected.contains(position)) && mLowerBoundary == Integer.MAX_VALUE) {
+                }else if (position < mFirstPosition) {
+                    mCanDrag = false;
+                }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {
+                    if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {
                         mLowerBoundary = position;
-                    }
-                    if (position < mLowerBoundary) {
+                        mCanDrag = false;
+                    }else {
                         mCanDrag = true;
                         mCanAutoScrollDown = true;
                         mAllSelected.add(position);
                         mMultipleSelected.add(position);
-                        mLastPositions.add(position);
                         mLastPositions.remove(position - 1);
-
+                        mLastPositions.add(position);
+                        
                         notifyItemChanged(position - 1);
                         notifyItemChanged(position);
-                    }else {
-                        mCanDrag = false;
                     }
-                }else if (!mIsDragDown && position >= mFirstPosition && position < mLowerBoundary && !mLastPositions.contains(position)) {
+                }else if (!mIsDragDown && position < mLowerBoundary - 1) {
                     mCanDrag = true;
                     mCanAutoScrollUp = true;
                     mAllSelected.remove(position + 1);
@@ -388,7 +389,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mCanDrag = false;
                 }
                 break;
-
         }
     }
 
@@ -402,19 +402,14 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
         switch (WhichViewClicked) {
             case TEXT_DO:
-                mAllSelected.addAll(mTemporary);
-                mTemporary.clear();
-
                 finalPosition = Math.max(finalPosition, mFirstPosition);
                 mFirstToLast.put(mFirstPosition, finalPosition);
                 mLastToFirst.put(finalPosition, mFirstPosition);
                 break;
             case TEXT_DONE:
-                int PreFirstPosition = mFirstPosition + mTextDoneFirstClick - finalPosition;
-                int PreLastPosition = mLastPosition + mTextDoneFirstClick - finalPosition;
-                mFirstToLast.remove(PreFirstPosition);
+                mFirstToLast.remove(mPreFirstP);
                 mFirstToLast.put(mFirstPosition, mLastPosition);
-                mLastToFirst.remove(PreLastPosition);
+                mLastToFirst.remove(mPreLastP);
                 mLastToFirst.put(mLastPosition, mFirstPosition);
                 break;
             case BUTTON_TOP:

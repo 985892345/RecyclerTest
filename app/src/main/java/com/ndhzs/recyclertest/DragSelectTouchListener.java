@@ -69,11 +69,11 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
 
         boolean isAbleToDrag = dragSelectListener.onCanDrag();
         if (isAbleToDrag) {
-            mPreviousPosition = dragSelectListener.onFirstPosition() - 1;
+            mPreviousPosition = dragSelectListener.onStartPosition() - 1;
         }
 
         if (e.getAction() == MotionEvent.ACTION_CANCEL) {
-            int firstPosition = dragSelectListener.onFirstPosition();
+            int firstPosition = dragSelectListener.onStartPosition();
             dragSelectListener.onSelectChange(firstPosition);
             dragSelectListener.onSelectLastPosition(true, firstPosition);
             isAbleToDrag = false;
@@ -232,7 +232,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         /**
          * @return 得到滑动开始时的位置
          */
-        int onFirstPosition();
+        int onStartPosition();
 
         /**
          * 返回一个int整数，用mRvHeight除以，求出边界不能选择的范围，返回数越大，不能选择的范围越大
