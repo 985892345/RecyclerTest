@@ -1,6 +1,7 @@
 package com.ndhzs.recyclertest;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -67,30 +68,35 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         mBottomBoundFrom = mRvHeight - mAutoScrollRange - mUnableSelectRange;
         mBottomBoundTo = mRvHeight - mUnableSelectRange;
 
+        mIsFirst = true;
+
         boolean isAbleToDrag = dragSelectListener.onCanDrag();
         if (isAbleToDrag) {
-            mPreviousPosition = dragSelectListener.onStartPosition() - 1;
+            mPreviousPosition = dragSelectListener.onStartPosition();
         }
 
         if (e.getAction() == MotionEvent.ACTION_CANCEL) {
-            int firstPosition = dragSelectListener.onStartPosition();
-            dragSelectListener.onSelectChange(firstPosition);
-            dragSelectListener.onSelectLastPosition(true, firstPosition);
+            dragSelectListener.onSelectLastPosition(mPreviousPosition);
             isAbleToDrag = false;
         }
         return isAbleToDrag;
     }
 
+    private boolean mIsFirst = true;
     @Override
     public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
         switch (e.getAction()) {
             case MotionEvent.ACTION_MOVE:
+                if (mIsFirst) {
+                    mIsFirst = false;
+                    mPreY = (int) e.getY();
+                }
                 processAutoScroll(e);
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
-                dragSelectListener.onSelectLastPosition(true, mPreviousPosition);
+                dragSelectListener.onSelectLastPosition(mPreviousPosition);
                 reset();
                 break;
         }
@@ -104,25 +110,30 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         }
         View child = mRecyclerView.findChildViewUnder(x, y);
         if (child != null) {
-             int position = mRecyclerView.getChildLayoutPosition(child);
+            int position = mRecyclerView.getChildLayoutPosition(child);
             if (position != mPreviousPosition) {
+//                Log.d(TAG, "在向下滑"+mIsDragDown);
                 int unitDifference = (position - mPreviousPosition) / Math.abs(position - mPreviousPosition);
                 while (mPreviousPosition != position) {
                     mPreviousPosition += unitDifference;
-                    dragSelectListener.onSelectChange(mPreviousPosition);
+                    dragSelectListener.onSelectChange(mPreviousPosition, mIsDragDown);
                 }
             }
         }
     }
 
+    private int mPreY;
+    private boolean mIsDragDown;
     private void processAutoScroll(MotionEvent event) {
         int y = (int) event.getY();
+        mIsDragDown = y > mPreY;
 
         if (y < mTopBoundFrom && dragSelectListener.onCanAutoScrollUp()) {
             mLastX = event.getX();
             mLastY = mUnableSelectRange;
             mScrollDistance = mMaxScrollDistance * -1;
             if (!mIsInTopSpot) {
+                mIsDragDown = false;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -133,6 +144,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mScrollDistance = (int) ((float) mMaxScrollDistance * mScrollSpeedFactor * -1f);
 
             if (!mIsInTopSpot) {
+                mIsDragDown = false;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -143,6 +155,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mScrollDistance = (int) ((float) mMaxScrollDistance * mScrollSpeedFactor);
 
             if (!mIsInBottomSpot) {
+                mIsDragDown = true;
                 mIsInBottomSpot = true;
                 startAutoScroll();
             }
@@ -151,6 +164,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mLastY = mRvHeight - mUnableSelectRange;
             mScrollDistance = mMaxScrollDistance;
             if (!mIsInTopSpot) {
+                mIsDragDown = true;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -195,7 +209,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             int scrollDistance;
             if (distance > 0) {
                 scrollDistance = Math.min(distance, mMaxScrollDistance);
-            }else {
+            } else {
                 scrollDistance = Math.max(distance, -mMaxScrollDistance);
             }
             mRecyclerView.scrollBy(0, scrollDistance);
@@ -244,15 +258,15 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         int onGetUnableSelectRange();
 
         /**
-         * @param position 通知adapter变化了的item位置（会包括开始位置和结尾位置），连续传入的两个位置不会相等
+         * @param position 通知adapter变化了的item位置（不包括开始位置，但包括结束位置），连续传入的两个位置不会相等
+         * @param mIsDragDown 返回是否是向下滑动
          */
-        void onSelectChange(int position);
+        void onSelectChange(int position, boolean mIsDragDown);
 
         /**
-         * @param isFinish 是否结束了滑动
          * @param finalPosition 结束滑动时的item位置
          */
-        void onSelectLastPosition(boolean isFinish, int finalPosition);
+        void onSelectLastPosition(int finalPosition);
     }
 }
 

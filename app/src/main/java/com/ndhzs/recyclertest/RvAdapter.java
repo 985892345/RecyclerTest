@@ -26,8 +26,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     private boolean mCanDrag;
     private int mStartPosition, mFirstPosition, mLastPosition, mPreFirstP, mPreLastP;
 
-    private boolean mIsFinish;
-
     private HashSet<Integer> mAllSelected;
     private HashSet<Integer> mSingleSelected;
     private HashSet<Integer> mMultipleSelected;
@@ -36,6 +34,9 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
     private HashMap<Integer, Integer> mFirstToLast;
     private HashMap<Integer, Integer> mLastToFirst;
+
+    private int mUpperBoundary = Integer.MIN_VALUE;
+    private int mLowerBoundary = Integer.MAX_VALUE;
 
     private int WhichViewClicked;
     private final int TEXT_DO = 0;
@@ -95,6 +96,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mMultipleSelected.remove(position);
                     mFirstPositions.remove(position);
                     mLastPositions.remove(position);
+                    mFirstToLast.remove(position);
+                    mLastToFirst.remove(position);
 
                     restoreUI(holder);
                 }
@@ -113,6 +116,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
                     mStartPosition = position;
                     mFirstPosition = mStartPosition;
+                    ////////
+                    mPreviousPosition = mFirstPosition;
                     
                     mFirstPositions.add(position);
                     mLastPositions.add(position);
@@ -161,6 +166,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mStartPosition = position;
                     mFirstPosition = mStartPosition;
                     mLastPosition = mFirstToLast.get(mFirstPosition);
+                    ////////
+                    mPreviousPosition = mStartPosition;
                 }
                 return mCanDrag;
             }
@@ -179,6 +186,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mStartPosition = position;
                     mLastPosition = mStartPosition;
                     mFirstPosition = mLastToFirst.get(mLastPosition);
+                    ////////
+                    mPreviousPosition = mStartPosition;
                 }
                 return mCanDrag;
             }
@@ -220,21 +229,17 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
     private int mPreviousPosition = mStartPosition;
     private boolean mIsDragDown;
-    private boolean mIsFirstClick = true;
-    private int mUpperBoundary = Integer.MIN_VALUE;
-    private int mLowerBoundary = Integer.MAX_VALUE;
     @Override
-    public void onSelectChange(int position) {
-        //此处position只会传入改变值
-        //等于的时候无所谓,因为除了第一次会有等于以外，就不会出现等于
+    public void onSelectChange(int position, boolean isDragDown) {
+
+        Log.d(TAG, "传过来的position = "+position);
         mIsDragDown = position >= mPreviousPosition;
         mPreviousPosition = position;
+        Log.d(TAG, "在向下滑"+mIsDragDown);
 
         switch (WhichViewClicked) {
             case TEXT_DO:
-                if (mIsFirstClick) {//记录第一次长按空的或单选的item的位置（单选的item会变成多选）
-                    mIsFirstClick = false;
-                }else if (position < mFirstPosition) {//当前位置小于开始位置
+                if (position < mFirstPosition) {//当前位置小于开始位置
                     mCanDrag = false;
                 }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {//向下滑动增加
                     if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {//当滑动到其他已经选择的区域，记录下边界位置
@@ -266,9 +271,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                 }
                 break;
             case TEXT_DONE:
-                if (mIsFirstClick) {
-                    mIsFirstClick = false;
-                }else if (mIsDragDown && mLastPosition + 1 < mLowerBoundary) {
+                if (mIsDragDown && mLastPosition + 1 < mLowerBoundary) {
                     if (mAllSelected.contains(mLastPosition + 1) && mLowerBoundary == Integer.MAX_VALUE) {
                         mLowerBoundary = mLastPosition + 1;
                         mCanDrag = false;
@@ -319,17 +322,15 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                 }
                 break;
             case BUTTON_TOP:
-                if (mIsFirstClick) {//第一次长按不处理
-                    mIsFirstClick = false;
-                }else if (position > mLastPosition) {
+                if (position > mLastPosition) {
                     mCanDrag = false;
                 }else if (!mIsDragDown && position > mUpperBoundary  && position != mLastPosition) {
                     if (mAllSelected.contains(position) && mUpperBoundary == Integer.MIN_VALUE) {
                         mUpperBoundary = position;
-                        Log.d(TAG, "mUpper = "+mUpperBoundary);
+                        Log.d(TAG, "上TOP：mUpper = "+mUpperBoundary);
                         mCanDrag = false;
                     }else {
-                        Log.d(TAG, "position = "+position);
+                        Log.d(TAG, "上TOP：上滑到"+position);
                         mCanDrag = true;
                         mCanAutoScrollUp = true;
                         mAllSelected.add(position);
@@ -341,7 +342,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(position);
                     }
                 }else if (mIsDragDown && position > mUpperBoundary + 1) {
-                    Log.d(TAG, "position = "+position+"     mUpper = "+mUpperBoundary);
+                    Log.d(TAG, "上TOP：下滑到"+position+"     mUpper = "+mUpperBoundary);
                     mCanDrag = true;
                     mCanAutoScrollDown = true;
                     mAllSelected.remove(position - 1);
@@ -352,19 +353,20 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     notifyItemChanged(position - 1);
                     notifyItemChanged(position);
                 }else {
+                    Log.d(TAG, "上TOP：Stop!!!");
                     mCanDrag = false;
                 }
                 break;
             case BUTTON_BOTTOM:
-                if (mIsFirstClick) {
-                    mIsFirstClick = false;
-                }else if (position < mFirstPosition) {
+                if (position < mFirstPosition) {
                     mCanDrag = false;
                 }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {
                     if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {
                         mLowerBoundary = position;
+                        Log.d(TAG, "下BOT：mLower = "+mLowerBoundary);
                         mCanDrag = false;
                     }else {
+                        Log.d(TAG, "下BOT：下滑到"+position+"     mLower = "+mLowerBoundary);
                         mCanDrag = true;
                         mCanAutoScrollDown = true;
                         mAllSelected.add(position);
@@ -376,6 +378,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(position);
                     }
                 }else if (!mIsDragDown && position < mLowerBoundary - 1) {
+                    Log.d(TAG, "下BOT：上滑到"+position);
                     mCanDrag = true;
                     mCanAutoScrollUp = true;
                     mAllSelected.remove(position + 1);
@@ -386,6 +389,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     notifyItemChanged(position + 1);
                     notifyItemChanged(position);
                 }else {
+                    Log.d(TAG, "下BOT：Stop!!!");
                     mCanDrag = false;
                 }
                 break;
@@ -393,10 +397,8 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     }
 
     @Override
-    public void onSelectLastPosition(boolean isFinish, int finalPosition) {
-        mIsFinish = isFinish;
+    public void onSelectLastPosition(int finalPosition) {
         mCanDrag = false;
-        mIsFirstClick = true;
         mCanAutoScrollUp = true;
         mCanAutoScrollDown = true;
 
