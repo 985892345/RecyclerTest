@@ -89,7 +89,6 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             case MotionEvent.ACTION_MOVE:
                 if (mIsFirst) {
                     mIsFirst = false;
-                    mPreY = (int) e.getY();
                 }
                 processAutoScroll(e);
                 break;
@@ -112,7 +111,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         if (child != null) {
             int position = mRecyclerView.getChildLayoutPosition(child);
             if (position != mPreviousPosition) {
-//                Log.d(TAG, "在向下滑"+mIsDragDown);
+                mIsDragDown = position > mPreviousPosition;
                 int unitDifference = (position - mPreviousPosition) / Math.abs(position - mPreviousPosition);
                 while (mPreviousPosition != position) {
                     mPreviousPosition += unitDifference;
@@ -122,18 +121,15 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
         }
     }
 
-    private int mPreY;
     private boolean mIsDragDown;
     private void processAutoScroll(MotionEvent event) {
         int y = (int) event.getY();
-        mIsDragDown = y > mPreY;
 
         if (y < mTopBoundFrom && dragSelectListener.onCanAutoScrollUp()) {
             mLastX = event.getX();
             mLastY = mUnableSelectRange;
             mScrollDistance = mMaxScrollDistance * -1;
             if (!mIsInTopSpot) {
-                mIsDragDown = false;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -144,7 +140,6 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mScrollDistance = (int) ((float) mMaxScrollDistance * mScrollSpeedFactor * -1f);
 
             if (!mIsInTopSpot) {
-                mIsDragDown = false;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -155,7 +150,6 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mScrollDistance = (int) ((float) mMaxScrollDistance * mScrollSpeedFactor);
 
             if (!mIsInBottomSpot) {
-                mIsDragDown = true;
                 mIsInBottomSpot = true;
                 startAutoScroll();
             }
@@ -164,7 +158,6 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             mLastY = mRvHeight - mUnableSelectRange;
             mScrollDistance = mMaxScrollDistance;
             if (!mIsInTopSpot) {
-                mIsDragDown = true;
                 mIsInTopSpot = true;
                 startAutoScroll();
             }
@@ -205,6 +198,7 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
     }
 
     private void scrollBy(int distance) {
+        updateSelectedRange(mLastX, mLastY);
         if (dragSelectListener.onCanDrag()) {
             int scrollDistance;
             if (distance > 0) {
@@ -214,7 +208,6 @@ public class DragSelectTouchListener implements RecyclerView.OnItemTouchListener
             }
             mRecyclerView.scrollBy(0, scrollDistance);
         }
-        updateSelectedRange(mLastX, mLastY);
     }
 
     private void reset() {

@@ -66,7 +66,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MyViewHolder holder, final int position) {
+    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
 
         holder.tvTime.setText(String.valueOf(position));
 
@@ -82,7 +82,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         mSingleSelected.add(position);
                         mAllSelected.add(position);
 
-                        holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.item_single_selected_position));
+                        holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_single_selected_position));
                         holder.vLine.setBackgroundColor(Color.TRANSPARENT);
                     }else {
                         mSingleSelected.remove(position);
@@ -116,8 +116,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
                     mStartPosition = position;
                     mFirstPosition = mStartPosition;
-                    ////////
-                    mPreviousPosition = mFirstPosition;
                     
                     mFirstPositions.add(position);
                     mLastPositions.add(position);
@@ -166,8 +164,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mStartPosition = position;
                     mFirstPosition = mStartPosition;
                     mLastPosition = mFirstToLast.get(mFirstPosition);
-                    ////////
-                    mPreviousPosition = mStartPosition;
                 }
                 return mCanDrag;
             }
@@ -186,8 +182,6 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     mStartPosition = position;
                     mLastPosition = mStartPosition;
                     mFirstPosition = mLastToFirst.get(mLastPosition);
-                    ////////
-                    mPreviousPosition = mStartPosition;
                 }
                 return mCanDrag;
             }
@@ -227,21 +221,20 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
         return mUnableSelect;
     }
 
-    private int mPreviousPosition = mStartPosition;
-    private boolean mIsDragDown;
     @Override
     public void onSelectChange(int position, boolean isDragDown) {
 
-        Log.d(TAG, "传过来的position = "+position);
-        mIsDragDown = position >= mPreviousPosition;
-        mPreviousPosition = position;
-        Log.d(TAG, "在向下滑"+mIsDragDown);
+        Log.d(TAG, "******************传过来的position = "+position);
 
         switch (WhichViewClicked) {
             case TEXT_DO:
                 if (position < mFirstPosition) {//当前位置小于开始位置
                     mCanDrag = false;
-                }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {//向下滑动增加
+                }else if (isDragDown && position < mLowerBoundary && position != mFirstPosition) {//向下滑动增加
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向下滑");
+                    Log.d(TAG, "单一：删掉Last第"+(position-1));
+                    Log.d(TAG, "单一：增加Last第"+position);
                     if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {//当滑动到其他已经选择的区域，记录下边界位置
                         mLowerBoundary = position;
                         mCanDrag = false;
@@ -255,8 +248,12 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(position - 1);
                         notifyItemChanged(position);
                     }
-                }else if (!mIsDragDown && position < mLowerBoundary - 1) {
+                }else if (!isDragDown && position < mLowerBoundary - 1) {
                     //当往回滑不是自身结尾位置时（防止从其他区域往回滑而刷新）
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向上滑");
+                    Log.d(TAG, "单一：删掉Last第"+position+1);
+                    Log.d(TAG, "单一：增加Last第"+position);
                     mCanDrag = true;
                     mCanAutoScrollUp = true;
                     mLastPositions.remove(position + 1);
@@ -267,15 +264,21 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     notifyItemChanged(position + 1);
                     notifyItemChanged(position);
                 }else {
+                    Log.d(TAG, "单一：Stop!!!   当前触摸位置为"+position);
                     mCanDrag = false;
                 }
                 break;
             case TEXT_DONE:
-                if (mIsDragDown && mLastPosition + 1 < mLowerBoundary) {
+                if (isDragDown && mLastPosition + 1 < mLowerBoundary) {
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向下滑");
                     if (mAllSelected.contains(mLastPosition + 1) && mLowerBoundary == Integer.MAX_VALUE) {
                         mLowerBoundary = mLastPosition + 1;
+                        Log.d(TAG, "整体：下边界 = "+mLowerBoundary);
                         mCanDrag = false;
                     }else {
+                        Log.d(TAG, "整体：首位置由"+mFirstPosition+"————>"+(mFirstPosition + 1));
+                        Log.d(TAG, "整体：末位置由"+mLastPosition+"————>"+(mLastPosition + 1));
                         mFirstPosition += 1;
                         mLastPosition += 1;
                         mCanDrag = true;
@@ -294,11 +297,16 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(mLastPosition);
                         notifyItemChanged(mLastPosition - 1);
                     }
-                }else if (!mIsDragDown &&  mFirstPosition - 1 > mUpperBoundary){
+                }else if (!isDragDown &&  mFirstPosition - 1 > mUpperBoundary){
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向上滑");
                     if (mAllSelected.contains(mFirstPosition - 1) && mUpperBoundary == Integer.MIN_VALUE) {
                         mUpperBoundary = mFirstPosition - 1;
+                        Log.d(TAG, "整体：上边界 = "+mUpperBoundary);
                         mCanDrag = false;
                     }else {
+                        Log.d(TAG, "整体：首位置由"+mFirstPosition+"————>"+(mFirstPosition - 1));
+                        Log.d(TAG, "整体：末位置由"+mLastPosition+"————>"+(mLastPosition - 1));
                         mFirstPosition -= 1;
                         mLastPosition -= 1;
                         mCanDrag = true;
@@ -318,16 +326,19 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(mLastPosition + 1);
                     }
                 }else {
+                    Log.d(TAG, "整体：Stop!!!   当前首位置为"+mFirstPosition+"    当前末位置为"+mLastPosition);
                     mCanDrag = false;
                 }
                 break;
             case BUTTON_TOP:
                 if (position > mLastPosition) {
                     mCanDrag = false;
-                }else if (!mIsDragDown && position > mUpperBoundary  && position != mLastPosition) {
+                }else if (!isDragDown && position > mUpperBoundary  && position != mLastPosition) {
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向上滑");
                     if (mAllSelected.contains(position) && mUpperBoundary == Integer.MIN_VALUE) {
                         mUpperBoundary = position;
-                        Log.d(TAG, "上TOP：mUpper = "+mUpperBoundary);
+                        Log.d(TAG, "上TOP：上边界 = "+mUpperBoundary);
                         mCanDrag = false;
                     }else {
                         Log.d(TAG, "上TOP：上滑到"+position);
@@ -341,7 +352,9 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(position + 1);
                         notifyItemChanged(position);
                     }
-                }else if (mIsDragDown && position > mUpperBoundary + 1) {
+                }else if (isDragDown && position > mUpperBoundary + 1) {
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向下滑");
                     Log.d(TAG, "上TOP：下滑到"+position+"     mUpper = "+mUpperBoundary);
                     mCanDrag = true;
                     mCanAutoScrollDown = true;
@@ -353,17 +366,19 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     notifyItemChanged(position - 1);
                     notifyItemChanged(position);
                 }else {
-                    Log.d(TAG, "上TOP：Stop!!!");
+                    Log.d(TAG, "上TOP：Stop!!!   当前触摸位置为"+position);
                     mCanDrag = false;
                 }
                 break;
             case BUTTON_BOTTOM:
                 if (position < mFirstPosition) {
                     mCanDrag = false;
-                }else if (mIsDragDown && position < mLowerBoundary && position != mFirstPosition) {
+                }else if (isDragDown && position < mLowerBoundary && position != mFirstPosition) {
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向下滑");
                     if (mAllSelected.contains(position) && mLowerBoundary == Integer.MAX_VALUE) {
                         mLowerBoundary = position;
-                        Log.d(TAG, "下BOT：mLower = "+mLowerBoundary);
+                        Log.d(TAG, "下BOT：下边界 = "+mLowerBoundary);
                         mCanDrag = false;
                     }else {
                         Log.d(TAG, "下BOT：下滑到"+position+"     mLower = "+mLowerBoundary);
@@ -377,7 +392,9 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                         notifyItemChanged(position - 1);
                         notifyItemChanged(position);
                     }
-                }else if (!mIsDragDown && position < mLowerBoundary - 1) {
+                }else if (!isDragDown && position < mLowerBoundary - 1) {
+                    Log.d(TAG, " ");
+                    Log.d(TAG, "向上滑");
                     Log.d(TAG, "下BOT：上滑到"+position);
                     mCanDrag = true;
                     mCanAutoScrollUp = true;
@@ -389,7 +406,7 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
                     notifyItemChanged(position + 1);
                     notifyItemChanged(position);
                 }else {
-                    Log.d(TAG, "下BOT：Stop!!!");
+                    Log.d(TAG, "下BOT：Stop!!!   当前触摸位置为"+position);
                     mCanDrag = false;
                 }
                 break;
@@ -404,34 +421,51 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
 
         switch (WhichViewClicked) {
             case TEXT_DO:
-                finalPosition = Math.max(finalPosition, mFirstPosition);
+                finalPosition = Math.min(finalPosition, mLowerBoundary - 1);//落在下边界及以下
+                finalPosition = Math.max(finalPosition, mFirstPosition);//落在首位及以上
+                Log.d(TAG, " ");
+                Log.d(TAG, "*****单一");
+                Log.d(TAG, "放进第"+mFirstPosition+"与"+finalPosition);
                 mFirstToLast.put(mFirstPosition, finalPosition);
                 mLastToFirst.put(finalPosition, mFirstPosition);
                 break;
             case TEXT_DONE:
+                Log.d(TAG, " ");
+                Log.d(TAG, "*****整体");
+                Log.d(TAG, "删掉第"+mPreFirstP+"与"+mPreLastP);
+                Log.d(TAG, "放进第"+mFirstPosition+"与"+mLastPosition);
                 mFirstToLast.remove(mPreFirstP);
                 mFirstToLast.put(mFirstPosition, mLastPosition);
                 mLastToFirst.remove(mPreLastP);
                 mLastToFirst.put(mLastPosition, mFirstPosition);
                 break;
             case BUTTON_TOP:
-                finalPosition = Math.max(finalPosition, mUpperBoundary + 1);
+                finalPosition = Math.max(finalPosition, mUpperBoundary + 1);//落在上边界及以上
+                finalPosition = Math.min(finalPosition, mLastPosition);//落在末位及以下
+                Log.d(TAG, " ");
+                Log.d(TAG, "*****上按钮");
+                Log.d(TAG, "首位由"+mFirstPosition+"————>"+finalPosition);
                 mFirstToLast.remove(mFirstPosition);
                 mFirstToLast.put(finalPosition, mLastPosition);
                 mLastToFirst.put(mLastPosition, finalPosition);
                 break;
             case BUTTON_BOTTOM:
-                finalPosition = Math.min(finalPosition, mLowerBoundary - 1);
+                finalPosition = Math.min(finalPosition, mLowerBoundary - 1);//落在下边界及以下
+                finalPosition = Math.max(finalPosition, mFirstPosition);//落在首位及以上
+                Log.d(TAG, " ");
+                Log.d(TAG, "*****下按钮");
+                Log.d(TAG, "末位由"+mLastPosition+"————>"+finalPosition);
                 mFirstToLast.put(mFirstPosition, finalPosition);
                 mLastToFirst.remove(mLastPosition);
                 mLastToFirst.put(finalPosition, mFirstPosition);
                 break;
         }
+        Log.d(TAG, mFirstToLast.toString());
         mUpperBoundary = Integer.MIN_VALUE;
         mLowerBoundary = Integer.MAX_VALUE;
     }
 
-    public HashMap<Integer, Integer> getMBeforeToAfter() {
+    public HashMap<Integer, Integer> getFirstToLast() {
         return mFirstToLast;
     }
 
@@ -440,25 +474,25 @@ public class RvAdapter extends DragSelectRvAdapter<RvAdapter.MyViewHolder> {
         boolean isFirst = mFirstPositions.contains(position);
         boolean isLast = mLastPositions.contains(position);
         if (isFirst && isLast) {
-            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.item_single_selected_position));
+            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_single_selected_position));
             holder.vTop.setBackgroundColor(ContextCompat.getColor(context, R.color.yellow));
-            holder.btnTop.setBackground(ContextCompat.getDrawable(context, R.drawable.item_btn_top));
+            holder.btnTop.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_btn_top));
             holder.vBottom.setBackgroundColor(ContextCompat.getColor(context, R.color.yellow));
-            holder.btnBottom.setBackground(ContextCompat.getDrawable(context, R.drawable.item_btn_bottom));
+            holder.btnBottom.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_btn_bottom));
             holder.vLine.setBackgroundColor(Color.TRANSPARENT);
         }else if (isFirst) {
-            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.item_first_position));
+            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_first_position));
             holder.vInsideBottom.setBackgroundColor(ContextCompat.getColor(context, R.color.selected));
             holder.vTop.setBackgroundColor(ContextCompat.getColor(context, R.color.yellow));
-            holder.btnTop.setBackground(ContextCompat.getDrawable(context, R.drawable.item_btn_top));
+            holder.btnTop.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_btn_top));
         }else if (isLast) {
-            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.item_last_position));
+            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_last_position));
             holder.vInsideTop.setBackgroundColor(ContextCompat.getColor(context, R.color.selected));
             holder.vBottom.setBackgroundColor(ContextCompat.getColor(context, R.color.yellow));
-            holder.btnBottom.setBackground(ContextCompat.getDrawable(context, R.drawable.item_btn_bottom));
+            holder.btnBottom.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_btn_bottom));
             holder.vLine.setBackgroundColor(Color.TRANSPARENT);
         }else if (mMultipleSelected.contains(position)){
-            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.item_inside_position));
+            holder.layoutTask.setBackground(ContextCompat.getDrawable(context, R.drawable.shape_item_inside_position));
             holder.vInsideTop.setBackgroundColor(ContextCompat.getColor(context, R.color.selected));
             holder.vInsideBottom.setBackgroundColor(ContextCompat.getColor(context, R.color.selected));
         }else {

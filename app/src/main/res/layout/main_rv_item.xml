@@ -89,7 +89,7 @@
         android:id="@+id/btn_first_top"
         android:layout_width="30dp"
         android:layout_height="15dp"
-        android:background="@drawable/item_btn_top"
+        android:background="@drawable/shape_item_btn_top"
         android:stateListAnimator="@null"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -98,7 +98,7 @@
         android:id="@+id/btn_last_bottom"
         android:layout_width="30dp"
         android:layout_height="15dp"
-        android:background="@drawable/item_btn_bottom"
+        android:background="@drawable/shape_item_btn_bottom"
         android:stateListAnimator="@null"
         app:layout_constraintBottom_toBottomOf="@id/view_last_bottom"
         app:layout_constraintEnd_toEndOf="parent" />
